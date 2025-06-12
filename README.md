@@ -1,4 +1,5 @@
 # Playwright - Csharp - NUnit Framework
+[![Pipeline workflow](https://github.com/abra1193/playwright-csharp-nunit-framework/actions/workflows/dotnet.yml/badge.svg)](https://github.com/abra1193/playwright-csharp-nunit-framework/actions/workflows/dotnet.yml)
 
 This repository contains a QA automation framework for web pages and API endpoints. The framework is organized for both UI and API automated testing using .NET, NUnit, and Playwright.
 
