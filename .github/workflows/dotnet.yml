@@ -1,0 +1,84 @@
+name: Pipeline workflow
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install libssl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install Playwright CLI tool
+        run: dotnet tool install --global Microsoft.Playwright.CLI
+
+      - name: Install Playwright NuGet package
+        run: dotnet add package Microsoft.Playwright
+
+      - name: Install Allure NUnit Logger
+        run: dotnet add package Allure.NUnit
+
+      - name: Build project
+        run: dotnet build
+
+      - name: Install Chromium
+        run: playwright install chromium
+
+      - name: Clean allure-results folder
+        run: rm -rf TestResults/allure-results
+
+      - name: Run tests
+        run: dotnet test --no-build
+        continue-on-error: true
+
+      - name: Install Allure CLI
+        run: npm install -g allure-commandline --save-dev
+
+      - name: Copy Allure results from any folder
+        if: ${{ always() }}
+        run: |
+         mkdir -p TestResults/allure-results
+         found=0
+         for dir in $(find . -type d -name allure-results); do
+         cp -r "$dir"/* TestResults/allure-results/ 2>/dev/null || true
+         found=1
+         done
+         if [ $found -eq 0 ]; then
+         echo "No Allure results found"
+         fi
+
+      - name: Generate Allure Report
+        if: ${{ always() }}
+        run: |
+          allure generate TestResults/allure-results --clean -o TestResults/allure-report
+
+      - name: Debug - Check allure-results folder
+        if: ${{ always() }}
+        run: ls -al TestResults/allure-results/ || echo "Folder does not exist or is empty"
+
+      - name: Upload artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: TestResults/allure-report
